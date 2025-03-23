@@ -22,34 +22,35 @@ export const Autocomplete: React.FC<Props> = ({
     setFilteredPeople(people);
   }, [people]);
 
-  const debounce = (func: () => void, timeout: number) => {
-    let timer: NodeJS.Timeout;
+  const useDebouncedEffect = (
+    callback: () => void,
+    dependencies: unknown[],
+    timeout: number,
+  ) => {
+    useEffect(() => {
+      const handler = setTimeout(callback, timeout);
 
-    return () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => func(), timeout);
-    };
+      return () => clearTimeout(handler);
+    }, [callback, timeout]);
   };
 
   const filterPeople = useCallback(() => {
-    if (!query) {
+    const trimmedQuery = query.trim();
+
+    if (trimmedQuery.length === 0) {
       setFilteredPeople(people);
 
       return;
     }
 
     const filtered = people.filter(person =>
-      person.name.toLowerCase().includes(query.toLowerCase()),
+      person.name.toLowerCase().includes(trimmedQuery.toLowerCase()),
     );
 
     setFilteredPeople(filtered);
   }, [query, people]);
 
-  useEffect(() => {
-    const debouncedFilter = debounce(filterPeople, delay);
-
-    debouncedFilter();
-  }, [query, filterPeople, delay]);
+  useDebouncedEffect(filterPeople, [query], delay);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(event.target.value);
@@ -85,9 +86,9 @@ export const Autocomplete: React.FC<Props> = ({
         <div className="dropdown-menu" role="menu" data-cy="suggestions-list">
           <div className="dropdown-content">
             {filteredPeople.length > 0 ? (
-              filteredPeople.map(person => (
+              filteredPeople.map((person, index) => (
                 <div
-                  key={person.slug}
+                  key={index}
                   className="dropdown-item"
                   data-cy="suggestion-item"
                   onClick={() => handleSelectPerson(person)}
